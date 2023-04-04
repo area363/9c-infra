@@ -1,4 +1,3 @@
-{{- if eq .Values.consensusType "pow"}}
 {{ range $idx := until (int .Values.miner.count) }}
 {{ $index := add $idx 1 }}
 apiVersion: apps/v1
@@ -63,13 +62,17 @@ spec:
         - --host={{ index $.Values.miner.hosts $idx }}
         {{- end }}
         - --port={{ $.Values.miner.ports.headless }}
+        {{- if eq $.Values.consensusType "pow"}}
         - --no-miner=false
-        - --store-path=/data/miner
-        - --store-type=rocksdb
         - --swarm-private-key
         - $(PRIVATE_KEY)
         - --miner-private-key
         - $(PRIVATE_KEY)
+        {{- else }}
+        - --no-miner=true
+        {{- end }}
+        - --store-path=/data/miner
+        - --store-type=rocksdb
         {{- range $.Values.peerStrings }}
         - --peer={{ . }}
         {{- end }}
@@ -135,5 +138,4 @@ spec:
       storageClassName: {{ $.Chart.Name }}-gp2
       volumeMode: Filesystem
 ---
-{{ end }}
 {{ end }}
