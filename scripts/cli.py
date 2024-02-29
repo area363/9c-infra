@@ -67,8 +67,12 @@ def test_internal_chain(
         ...,
         help="odin-internal or heimdall-internal",
     ),
-    offset: int = 100,
-    limit: int = 10,
+    offset: int = typer.Argument(
+        ...,
+    ),
+    limit: int = typer.Argument(
+        ...,
+    ),
 ):
     """
     Run post deploy script
