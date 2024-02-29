@@ -40,3 +40,5 @@ jobs:
       run: |
         python cli.py test-internal-chain ${{ github.event.inputs.network }} ${{ github.event.inputs.offset }} ${{ github.event.inputs.limit }}
       working-directory: ./scripts
+      env:
+        GITHUB_TOKEN: ${{ secrets.P_GITHUB_TOKEN }}
