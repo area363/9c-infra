@@ -7,6 +7,7 @@ import requests
 from urllib.parse import urljoin
 from app.client import GithubClient
 from app.config import config
+from typing import Literal
 
 Network = Literal["odin"]
 Offset = 0
