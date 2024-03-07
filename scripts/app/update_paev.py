@@ -2,6 +2,9 @@ import boto3
 import requests
 import json
 
+from app.client import GithubClient
+from app.config import config
+
 class PluggableActionEvaluatorUpdater:
     def __init__(self) -> None:
         self.github_client = GithubClient(
