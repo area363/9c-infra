@@ -10,7 +10,7 @@ class PluggableActionEvaluatorUpdater:
 
     def update(
         self,
-        paev_url
+        paev_url,
         end_value,
         lib9c_plugin_url):
 
