@@ -93,4 +93,4 @@ class InternalChainTester:
         url = f'https://planetariumhq.slack.com/services/hooks/slackbot?token={config.slack_token}&channel=%239c-internal'
         data = "[9C-INFRA] Finished testing {network} network from #{offset} to #{tip_index}."
         headers = {'Content-Type': 'text/plain'}
-        response = requests.post(url, data=text_data, headers=headers)
+        response = requests.post(url, data=data, headers=headers)
