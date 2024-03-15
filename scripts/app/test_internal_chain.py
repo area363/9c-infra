@@ -36,6 +36,7 @@ class InternalChainTester:
         mainnet_headless_url = urljoin(f"http://{mainnet_headless}", "graphql")
         target_validator_url = urljoin(f"http://{internal_target_validator}", "graphql")
 
+        original_offset = offset
         tip_index = offset + limit
         print(tip_index)
 
@@ -91,6 +92,6 @@ class InternalChainTester:
 
         # The URL you want to send the data to
         url = f'https://planetariumhq.slack.com/services/hooks/slackbot?token={config.slack_token}&channel=%239c-internal'
-        data = f"[9C-INFRA] Finished testing `{network}` network from `#{offset}` to `#{tip_index}`."
+        data = f"[9C-INFRA] Finished testing `{network}` network from `#{original_offset}` to `#{tip_index}`."
         headers = {'Content-Type': 'text/plain'}
         response = requests.post(url, data=data, headers=headers)
