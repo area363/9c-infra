@@ -91,6 +91,6 @@ class InternalChainTester:
 
         # The URL you want to send the data to
         url = f'https://planetariumhq.slack.com/services/hooks/slackbot?token={config.slack_token}&channel=%239c-internal'
-        data = "[9C-INFRA] Finished testing {network} network from #{offset} to #{tip_index}."
+        data = f"[9C-INFRA] Finished testing \`{network}\` network from \`#{offset}\` to \`#{tip_index}\`."
         headers = {'Content-Type': 'text/plain'}
         response = requests.post(url, data=data, headers=headers)
