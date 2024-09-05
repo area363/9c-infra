@@ -20,6 +20,9 @@ global:
   resetSnapshot: true
   rollbackSnapshot: false
 
+  pyroscope:
+    enabled: true
+
 externalSecret:
   enabled: true
   prefix: "9c-internal-v2/heimdall"
@@ -31,6 +34,7 @@ ingress:
     marketService: "heimdall-internal-market.9c.gg"
     patrolRewardService: "heimdall-internal-patrol.9c.gg"
     worldBoss: "heimdall-internal-world-boss.9c.gg"
+    arenaService: "heimdall-internal-arena.9c.gg"
 
 bridgeService:
   enabled: true
@@ -47,7 +51,7 @@ bridgeService:
     size: "50Gi"
 
   nodeSelector:
-    eks.amazonaws.com/nodegroup: 9c-internal-m5d_xl_2c
+    eks.amazonaws.com/nodegroup: 9c-internal-m5_xl_2c_ondemand
 
   account:
     type: "kms"
@@ -70,8 +74,8 @@ bridgeService:
   rdb:
     enabled: true
     defaultStartBlockIndex:
-      upstream: '10301628'
-      downstream: "1914008"
+      upstream: "11620010"
+      downstream: "3125739"
 
 bridgeServiceApi:
   enabled: true
@@ -106,7 +110,7 @@ marketService:
     size: 1Gi
 
   nodeSelector:
-    eks.amazonaws.com/nodegroup: 9c-internal-m5d_xl_2c
+    eks.amazonaws.com/nodegroup: 9c-internal-m5_xl_2c_ondemand
 
   env:
   - name: DOTNET_gcServer
@@ -120,19 +124,13 @@ patrolRewardService:
   enabled: true
 
   nodeSelector:
-    eks.amazonaws.com/nodegroup: 9c-internal-m5d_xl_2c
+    eks.amazonaws.com/nodegroup: 9c-internal-m5_xl_2c_ondemand
 
   db:
     local: true
 
 remoteHeadless:
   count: 1
-
-  env:
-  - name: Headless__AccessControlService__AccessControlServiceType
-    value: "RestAPI"
-  - name: Headless__AccessControlService__AccessControlServiceConnectionString
-    value: "http://acc-service.heimdall.svc.cluster.local:80"
 
   resources:
     requests:
@@ -152,6 +150,8 @@ remoteHeadless:
 
   extraArgs:
   - --planet=HeimdallInternal
+  - --remote-key-value-service
+  - --arena-participants-sync=false
 
 rudolfService:
   enabled: true
@@ -183,7 +183,7 @@ seed:
   - "tcp-seed-1.heimdall.svc.cluster.local"
 
   nodeSelector:
-    eks.amazonaws.com/nodegroup: 9c-internal-m5d_xl_2c
+    eks.amazonaws.com/nodegroup: 9c-internal-m5_xl_2c_ondemand
 
 snapshot:
   partition:
@@ -191,7 +191,7 @@ snapshot:
     suspend: true
   slackChannel: "bot-test"
 
-  image: "planetariumhq/ninechronicles-snapshot:git-fc194ebdc47ec4ebe14f97f5ea01ff97b0a276d6"
+  image: "planetariumhq/ninechronicles-snapshot:git-45205b5ed6d978bb0dda6ad0b84fb0a393015711"
 
   path: internal/heimdall
 
@@ -225,6 +225,7 @@ validator:
   extraArgs:
   - --tx-life-time=2000000000
   - --planet=HeimdallInternal
+  - --arena-participants-sync=false
 
 worldBoss:
   enabled: true
@@ -246,14 +247,10 @@ worldBoss:
     slackSigningSecret: ""
 
   nodeSelector:
-    eks.amazonaws.com/nodegroup: 9c-internal-m5d_xl_2c
+    eks.amazonaws.com/nodegroup: 9c-internal-m5_xl_2c_ondemand
 
 testHeadless1:
-  enabled: false
-  image:
-    repository: planetariumhq/ninechronicles-headless
-    pullPolicy: Always
-    tag: "git-39894281ca05d15acf6c476efe23388bb182cc7e"
+  enabled: true
 
   host: "heimdall-internal-test-1.nine-chronicles.com"
 
@@ -298,4 +295,15 @@ stateMigrationService:
   enabled: false
 
   nodeSelector:
-    eks.amazonaws.com/nodegroup: 9c-internal-m5d_xl_2c
+    eks.amazonaws.com/nodegroup: 9c-internal-m5_xl_2c_ondemand
+
+arenaService:
+  enabled: true
+  rwMode: false
+
+  nodeSelector:
+    eks.amazonaws.com/nodegroup: 9c-internal-m5_xl_2c_ondemand
+
+  env:
+    - name: Worker
+      value: "true"

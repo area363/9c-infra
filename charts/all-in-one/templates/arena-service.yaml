@@ -1,0 +1,92 @@
+{{ if .Values.arenaService.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app: arena-service
+    app.kubernetes.io/instance: {{ $.Release.Name }}
+  name: arena-service
+  namespace: {{ $.Release.Name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: arena-service
+  serviceName: arena-service
+  template:
+    metadata:
+      labels:
+        app: arena-service
+    spec:
+      containers:
+        - args:
+            - ArenaService.dll
+          command:
+            - dotnet
+          env:
+            - name: Rpc__Host
+              valueFrom:
+                secretKeyRef:
+                  key: rpc-host
+                  name: arena
+            - name: Redis__ConnectionString
+              valueFrom:
+                secretKeyRef:
+                  key: redis-connection-string
+                  name: arena
+            - name: Redis__TimeOut
+              value: "5000"
+            - name: Redis__Database
+              valueFrom:
+                secretKeyRef:
+                  key: redis-database
+                  name: arena
+          {{- with $.Values.arenaService.env }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          image: {{ $.Values.arenaService.image.repository }}:{{ $.Values.arenaService.image.tag }}
+          name: arena-service
+          ports:
+            - containerPort: 80
+      restartPolicy: Always
+      {{- with $.Values.arenaService.nodeSelector.read }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+  updateStrategy:
+    type: RollingUpdate
+{{ if .Values.arenaService.redis }}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app: arena-service-redis
+    app.kubernetes.io/instance: {{ $.Release.Name }}
+  name: arena-service-redis
+  namespace: {{ $.Release.Name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: arena-service-redis
+  serviceName: arena-service-redis
+  template:
+    metadata:
+      labels:
+        app: arena-service-redis
+    spec:
+      containers:
+        - args:
+            - redis-server
+            - --appendonly
+            - "yes"
+          image: redis:6.2
+          name: arena-service-redis
+          ports:
+            - containerPort: 6379
+      restartPolicy: Always
+  updateStrategy:
+    type: RollingUpdate
+{{- end }}
+{{ end }}

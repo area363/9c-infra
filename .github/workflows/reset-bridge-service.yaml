@@ -26,13 +26,13 @@ jobs:
         KUBE_CONFIG: ${{ secrets.KUBECONFIG }}
       with:
         args: scale --replicas=0 statefulset/bridge-service -n heimdall
-  
+
     - uses: actions-hub/kubectl@master
       env:
         KUBE_CONFIG: ${{ secrets.KUBECONFIG }}
       with:
         args: scale --replicas=0 statefulset/bridge-service-db -n heimdall
-    
+
     - uses: actions-hub/kubectl@master
       env:
         KUBE_CONFIG: ${{ secrets.KUBECONFIG }}

@@ -5,7 +5,7 @@ clusterName: "9c-main-v2"
 logLevel: "debug"
 
 global:
-  appProtocolVersion: "200170/AB2da648b9154F2cCcAFBD85e0Bc3d51f97330Fc/MEUCIQCJAsvwzIb1sT4x6Zo1e1N5y3gqBroVA2FKzMvbrxr0RQIgIgxyKLCJurnYDc8RZZKcMU0oqAF3zm2ilrgWCxyRrWU=/ZHU5OnRpbWVzdGFtcHUxMDoyMDI0LTA0LTMwZQ=="
+  appProtocolVersion: "200220/AB2da648b9154F2cCcAFBD85e0Bc3d51f97330Fc/MEQCIFgo205fCBv8i1NFbAJVFn4jeztwzM2IJE78T5gd1oKQAiAqkKgbKN5Arl8Gyg+jDrTVIF8nTJKBBu6mhK0O8qL5iw==/ZHU5OnRpbWVzdGFtcHUxMDoyMDI0LTA4LTI4ZQ=="
 
   validatorPath: "validator-5.9c-network.svc.cluster.local"
   genesisBlockPath: "https://release.nine-chronicles.com/genesis-block-9c-main"
@@ -41,10 +41,11 @@ ingress:
     marketService: "odin-market.9c.gg"
     patrolRewardService: "odin-patrol.9c.gg"
     worldBoss: "odin-world-boss.9c.gg"
+    arenaService: "odin-arena.9c.gg"
 
 snapshot:
   slackChannel: "9c-mainnet"
-  image: "planetariumhq/ninechronicles-snapshot:git-a5572ca10a3497b3897e650b99d4713a3355eccb"
+  image: "planetariumhq/ninechronicles-snapshot:git-26ace851e53100001efbc7ba9282478269fde0f6"
   path: "main/partition"
 
   fullSnapshot:
@@ -82,8 +83,13 @@ seed:
   # dotnet args
   workerCount: 1000
 
+  resources:
+    requests:
+      cpu: 500m
+      memory: 500Mi
+
   nodeSelector:
-    node.kubernetes.io/instance-type: m5.large
+    eks.amazonaws.com/nodegroup: 9c-main-m7g_l_2c
 
 validator:
   count: 4
@@ -108,20 +114,22 @@ validator:
   - name: IpRateLimiting__IpWhiteList__3
     value: "::ffff:118.131.110.197"
   - name: Headless__AccessControlService__AccessControlServiceType
-    value: "redis"
+    value: "local"
   - name: Headless__AccessControlService__AccessControlServiceConnectionString
-    value: "acc-redis-service.9c-network.svc.cluster.local:6379"
-  - name: DOTNET_gcServer
-    value: "1"
+    value: "https://9c-cluster-config.s3.us-east-2.amazonaws.com/9c-main/odin/whitelist.json"
   - name: PLUGIN_PATH
     value: "/data"
 
   loggingEnabled: true
+  datadog:
+    enabled: true
 
   extraArgs:
   - --tx-quota-per-signer=1
   - --tx-life-time=10
-  - --consensus-target-block-interval=6000
+  - --consensus-target-block-interval=7500
+  - --consensus-propose-second-base=30
+  - --arena-participants-sync=false
 
   consensusSeedStrings:
   - "027bd36895d68681290e570692ad3736750ceaab37be402442ffb203967f98f7b6,9c-main-tcp-seed-1.planetarium.dev,31235"
@@ -141,11 +149,11 @@ validator:
     value: validator-test
 
   nodeSelector:
-    eks.amazonaws.com/nodegroup: 9c-main-m7g_2xl_2c_validator
+    eks.amazonaws.com/nodegroup: 9c-main-r7g_xl_2c_validator
 
   resources:
     requests:
-      cpu: '6'
+      cpu: '3'
       memory: 25Gi
 
 remoteHeadless:
@@ -182,24 +190,23 @@ remoteHeadless:
   - name: IpRateLimiting__IpWhiteList__3
     value: "::ffff:118.131.110.197"
   - name: Headless__AccessControlService__AccessControlServiceType
-    value: "redis"
+    value: "local"
   - name: Headless__AccessControlService__AccessControlServiceConnectionString
-    value: "acc-redis-service.9c-network.svc.cluster.local:6379"
-  - name: DOTNET_gcServer
-    value: "1"
+    value: "https://9c-cluster-config.s3.us-east-2.amazonaws.com/9c-main/odin/whitelist.json"
   - name: PLUGIN_PATH
     value: "/data"
 
   extraArgs:
   - --tx-quota-per-signer=1
+  - --arena-participants-sync=false
 
   nodeSelector:
-    eks.amazonaws.com/nodegroup: 9c-main-m7g_4xl_2c_test
+    eks.amazonaws.com/nodegroup: 9c-main-m7g_2xl_2c_test
 
   resources:
     requests:
       cpu: '5'
-      memory: 50Gi
+      memory: 25Gi
 
   tolerations:
   - effect: NoSchedule
@@ -208,12 +215,14 @@ remoteHeadless:
     value: remote-headless-test
 
   loggingEnabled: true
+  datadog:
+    enabled: true
 
 dataProviderDataMigrator:
   enabled: true
 
   nodeSelector:
-    eks.amazonaws.com/nodegroup: 9c-main-r7g_2xl_2c_test
+    eks.amazonaws.com/nodegroup: 9c-main-r7g_2xl_2c_dp
 
   resources:
     requests:
@@ -243,10 +252,10 @@ dataProvider:
       memory: 26Gi
 
   env:
-  - name: DOTNET_gcServer
-    value: "1"
   - name: PLUGIN_PATH
     value: "/data"
+  - name: NC_Planet
+    value: Odin
 
 explorer:
   enabled: false
@@ -280,14 +289,16 @@ marketService:
 
   nodeSelector:
     read:
-      node.kubernetes.io/instance-type: m5.large
+      eks.amazonaws.com/nodegroup: 9c-main-m7g_l_2c
     write:
-      eks.amazonaws.com/nodegroup: 9c-main-m7g_xl_2c
+      eks.amazonaws.com/nodegroup: 9c-main-m7g_l_2c
 
 fullState:
   enabled: true
 
   loggingEnabled: true
+  datadog:
+    enabled: true
 
   useTurnServer: false
 
@@ -296,6 +307,9 @@ fullState:
   extraArgs:
   - --no-reduce-store
   - --tx-quota-per-signer=1
+  - --arena-participants-sync=false
+
+  headlessAppsettingsPath: "https://9c-cluster-config.s3.us-east-2.amazonaws.com/9c-main/odin/appsettings-nodeinfra.json"
 
   env:
   - name: IpRateLimiting__EnableEndpointRateLimiting
@@ -329,11 +343,9 @@ fullState:
   - name: MultiAccountManaging__EnableManaging
     value: "true"
   - name: Headless__AccessControlService__AccessControlServiceType
-    value: "redis"
+    value: "local"
   - name: Headless__AccessControlService__AccessControlServiceConnectionString
-    value: "acc-redis-service.9c-network.svc.cluster.local:6379"
-  - name: DOTNET_gcServer
-    value: "1"
+    value: "https://9c-cluster-config.s3.us-east-2.amazonaws.com/9c-main/odin/whitelist.json"
   - name: PLUGIN_PATH
     value: "/data"
 
@@ -349,13 +361,13 @@ fullState:
       memory: 25Gi
 
   nodeSelector:
-    eks.amazonaws.com/nodegroup: 9c-main-m7g_2xl_2c_test
+    eks.amazonaws.com/nodegroup: 9c-main-m7i_flex_2xl_2c_test
 
 worldBoss:
   enabled: true
 
   nodeSelector:
-    node.kubernetes.io/instance-type: m5.large
+    eks.amazonaws.com/nodegroup: 9c-main-m7g_l_2c
 
 bridge:
   enabled: true
@@ -364,17 +376,19 @@ bridge:
   bridgeStatusBotImage:
     tag: "20210913-01"
   nodeSelector:
-    node.kubernetes.io/instance-type: m5.large
+    eks.amazonaws.com/nodegroup: 9c-main-m7g_l_2c
 
 testHeadless1:
   enabled: true
 
-  image:
-    tag: "git-d0ef9a8410e1dd8ba9474d046553db018d1eef27"
-
   loggingEnabled: true
 
+  datadog:
+    enabled: true
+
   host: "9c-main-test-1.nine-chronicles.com"
+
+  headlessAppsettingsPath: "https://9c-cluster-config.s3.us-east-2.amazonaws.com/9c-main/odin/appsettings-nodeinfra.json"
 
   env:
   - name: IpRateLimiting__EnableEndpointRateLimiting
@@ -392,16 +406,15 @@ testHeadless1:
   - name: IpRateLimiting__IpBanThresholdCount
     value: "5"
   - name: Headless__AccessControlService__AccessControlServiceType
-    value: "redis"
+    value: "local"
   - name: Headless__AccessControlService__AccessControlServiceConnectionString
-    value: "acc-redis-service.9c-network.svc.cluster.local:6379"
-  - name: DOTNET_gcServer
-    value: "1"
+    value: "https://9c-cluster-config.s3.us-east-2.amazonaws.com/9c-main/odin/whitelist.json"
   - name: PLUGIN_PATH
     value: "/data"
 
   extraArgs:
   - --tx-quota-per-signer=1
+  - --arena-participants-sync=false
 
   resources:
     requests:
@@ -415,7 +428,7 @@ testHeadless1:
     value: remote-headless-test
 
   nodeSelector:
-    eks.amazonaws.com/nodegroup: 9c-main-2c_spot
+    eks.amazonaws.com/nodegroup: 9c-main-2c_spot_amd
 
 testHeadless2:
   enabled: false
@@ -438,16 +451,15 @@ testHeadless2:
   - name: IpRateLimiting__IpBanThresholdCount
     value: "5"
   - name: Headless__AccessControlService__AccessControlServiceType
-    value: "redis"
+    value: "local"
   - name: Headless__AccessControlService__AccessControlServiceConnectionString
-    value: "acc-redis-service.9c-network.svc.cluster.local:6379"
-  - name: DOTNET_gcServer
-    value: "1"
+    value: "https://9c-cluster-config.s3.us-east-2.amazonaws.com/9c-main/odin/whitelist.json"
   - name: PLUGIN_PATH
     value: "/data"
 
   extraArgs:
   - --tx-quota-per-signer=1
+  - --arena-participants-sync=false
 
   host: "9c-main-test-2.nine-chronicles.com"
 
@@ -470,7 +482,12 @@ jwtHeadless:
 
   loggingEnabled: true
 
+  datadog:
+    enabled: true
+
   host: "9c-main-jwt.nine-chronicles.com"
+
+  headlessAppsettingsPath: "https://9c-cluster-config.s3.us-east-2.amazonaws.com/9c-main/odin/appsettings-nodeinfra.json"
 
   env:
   - name: IpRateLimiting__EnableEndpointRateLimiting
@@ -488,16 +505,15 @@ jwtHeadless:
   - name: IpRateLimiting__IpBanThresholdCount
     value: "5"
   - name: Headless__AccessControlService__AccessControlServiceType
-    value: "redis"
+    value: "local"
   - name: Headless__AccessControlService__AccessControlServiceConnectionString
-    value: "acc-redis-service.9c-network.svc.cluster.local:6379"
-  - name: DOTNET_gcServer
-    value: "1"
+    value: "https://9c-cluster-config.s3.us-east-2.amazonaws.com/9c-main/odin/whitelist.json"
   - name: PLUGIN_PATH
     value: "/data"
 
   extraArgs:
   - --tx-quota-per-signer=1
+  - --arena-participants-sync=false
 
   resources:
     requests:
@@ -511,7 +527,7 @@ jwtHeadless:
     value: remote-headless-test
 
   nodeSelector:
-    eks.amazonaws.com/nodegroup: 9c-main-m7g_4xl_2c_test
+    eks.amazonaws.com/nodegroup: 9c-main-m7i_flex_2xl_2c_test
 
 remoteActionEvaluatorHeadless:
   enabled: false
@@ -535,8 +551,13 @@ blockIntervalNotifier:
 patrolRewardService:
   enabled: true
 
+  resources:
+    requests:
+      cpu: 100m
+      memory: 500Mi
+
   nodeSelector:
-    node.kubernetes.io/instance-type: m5.large
+    eks.amazonaws.com/nodegroup: 9c-main-m7g_l_2c
 
 acc:
   enabled: true
@@ -546,14 +567,14 @@ acc:
     port: 6379
 
     nodeSelector:
-      eks.amazonaws.com/nodegroup: 9c-main-m7g_xl_2c
+      eks.amazonaws.com/nodegroup: 9c-main-m7g_l_2c
 
     resources:
       requests:
-        memory: 8Gi
+        memory: 200Mi
 
   nodeSelector:
-    eks.amazonaws.com/nodegroup: 9c-main-t3_medium
+    eks.amazonaws.com/nodegroup: 9c-main-m7g_l_2c
 
 volumeRotator:
   enabled: false
@@ -587,8 +608,11 @@ rudolfService:
     - "sg-0f0bf654f2ff02289"
     - "sg-033602a010bce902e"
 
+  nodeSelector:
+    eks.amazonaws.com/nodegroup: 9c-main-m7g_l_2c
+
 rudolfCurrencyNotifier:
-  enabled: true
+  enabled: false
 
   config:
     schedule: "0 0 * * *"
@@ -596,16 +620,33 @@ rudolfCurrencyNotifier:
     targetAddress: "0x4c35e816c9e13628615581a436a0df38F57A08cc"
     serverName: "odin"
   nodeSelector:
-    eks.amazonaws.com/nodegroup: 9c-main-m5_l_2c
+    eks.amazonaws.com/nodegroup: 9c-main-m7g_l_2c
 
 testWorldBoss:
   enabled: false
 
   nodeSelector:
-    eks.amazonaws.com/nodegroup: 9c-main-m5_l_2c
+    eks.amazonaws.com/nodegroup: 9c-main-m7g_l_2c
 
 stateMigrationService:
   enabled: false
 
   nodeSelector:
-    eks.amazonaws.com/nodegroup: 9c-main-m5_l_2c
+    eks.amazonaws.com/nodegroup: 9c-main-m7g_l_2c
+
+arenaService:
+  enabled: true
+  rwMode: true
+  env:
+    - name: Worker
+      value: "false"
+
+  envForWrite:
+    - name: Worker
+      value: "true"
+
+  nodeSelector:
+    read:
+      eks.amazonaws.com/nodegroup: 9c-main-m7g_l_2c
+    write:
+      eks.amazonaws.com/nodegroup: 9c-main-m7g_l_2c

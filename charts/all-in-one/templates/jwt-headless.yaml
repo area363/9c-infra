@@ -23,6 +23,9 @@ spec:
     metadata:
       labels:
         app: jwt-headless
+      annotations:
+        prometheus.io/port: '80'
+        prometheus.io/scrape: 'true'
       name: jwt-headless
     spec:
       {{- if $.Values.global.resetSnapshot }}
@@ -46,11 +49,7 @@ spec:
               secretKeyRef:
                 key: slack-webhook-url
                 name: slack
-          {{- if and $.Values.remoteHeadless.image.repository $.Values.remoteHeadless.image.tag }}
-          image: {{ $.Values.remoteHeadless.image.repository }}:{{ $.Values.remoteHeadless.image.tag }}
-          {{- else }}
-          image: {{ $.Values.global.image.repository }}:{{ $.Values.global.image.tag }}
-          {{- end }}
+          image: {{ $.Values.jwtHeadless.image.repository | default $.Values.global.image.repository }}:{{ $.Values.jwtHeadless.image.tag | default $.Values.global.image.tag }}
           imagePullPolicy: Always
           name: reset-snapshot
           resources: {}
@@ -63,6 +62,31 @@ spec:
             subPath: download_snapshot.sh
           - mountPath: /data
             name: jwt-headless-data
+      {{- end }}
+      {{- if $.Values.jwtHeadless.datadog.enabled }}
+      initContainers:
+      - command:
+          - sh
+          - '-c'
+          - >
+            apk --no-cache add curl tar
+
+            mkdir /data/datadog
+
+            curl -s -L
+            https://github.com/DataDog/dd-trace-dotnet/releases/download/v2.57.0/datadog-dotnet-apm-2.57.0.tar.gz
+            | tar xvz -C /data/datadog
+
+            sh /data/datadog/createLogPath.sh
+        image: alpine
+        imagePullPolicy: Always
+        name: setup-datadog
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /data
+          name: jwt-headless-data
       {{- end }}
       containers:
       - args:
@@ -96,19 +120,17 @@ spec:
         - --chain-tip-stale-behavior-type=reboot
         - --tx-life-time=10
         - --planet={{ $.Values.global.planet }}
-        {{- if $.Values.global.headlessAppsettingsPath }}
-        - --config={{ $.Values.global.headlessAppsettingsPath }}
+        {{- if .Values.jwtHeadless.headlessAppsettingsPath }}
+        - --config={{ .Values.jwtHeadless.headlessAppsettingsPath }}
+        {{- else if .Values.global.headlessAppsettingsPath }}
+        - --config={{ .Values.global.headlessAppsettingsPath }}
         {{- end }}
         {{- with $.Values.jwtHeadless.extraArgs }}
           {{- toYaml . | nindent 8 }}
         {{- end }}
         command:
         - dotnet
-        {{- if and $.Values.jwtHeadless.image.repository $.Values.jwtHeadless.image.tag }}
-        image: {{ $.Values.jwtHeadless.image.repository }}:{{ $.Values.jwtHeadless.image.tag }}
-        {{- else }}
-        image: {{ $.Values.global.image.repository }}:{{ $.Values.global.image.tag }}
-        {{- end }}
+        image: {{ $.Values.jwtHeadless.image.repository | default $.Values.global.image.repository }}:{{ $.Values.jwtHeadless.image.tag | default $.Values.global.image.tag }}
         imagePullPolicy: Always
         name: jwt-headless
         ports:
@@ -182,6 +204,36 @@ spec:
               secretKeyRef:
                 key: jwt-token
                 name: private-keys
+          {{- end }}
+          {{- if $.Values.jwtHeadless.datadog.enabled }}
+          - name: OTLP_ENDPOINT
+            value: 'http://datadog.datadog.svc.cluster.local:4317'
+          - name: CORECLR_ENABLE_PROFILING
+            value: '1'
+          - name: CORECLR_PROFILER
+            value: '{846F5F1C-F9AE-4B07-969E-05C26BC060D8}'
+          - name: CORECLR_PROFILER_PATH
+            value: /data/datadog/Datadog.Trace.ClrProfiler.Native.so
+          - name: LD_PRELOAD
+            value: /data/datadog/continuousprofiler/Datadog.Linux.ApiWrapper.x64.so
+          - name: DD_ENV
+            value: production
+          - name: DD_PROFILING_ENABLED
+            value: 'true'
+          - name: DD_PROFILING_ALLOCATION_ENABLED
+            value: 'true'
+          - name: DD_PROFILING_LOCK_ENABLED
+            value: 'true'
+          - name: DD_PROFILING_HEAP_ENABLED
+            value: 'true'
+          - name: DD_DOTNET_TRACER_HOME
+            value: /data/datadog
+          - name: DD_AGENT_HOST
+            value: datadog.datadog.svc.cluster.local
+          - name: DD_RUNTIME_METRICS_ENABLED
+            value: 'true'
+          - name: DD_DYNAMIC_INSTRUMENTATION_ENABLED
+            value: 'true'
           {{- end }}
         {{- with $.Values.jwtHeadless.env }}
           {{- toYaml . | nindent 10 }}

@@ -50,3 +50,18 @@ argoWorkflows:
     enabled: false
   ingress:
     enabled: false
+
+pyroscope:
+  enabled: false
+  replicaCount: 2
+  nodeGroup: ""
+
+gatewayApi:
+  enabled: false
+  roleArn: ""
+
+datadog:
+  enabled: false
+  nodeGroup: ""
+  tolerations: []
+  affinity: {}

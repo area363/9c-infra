@@ -820,3 +820,45 @@ spec:
 ---
 {{ end }}
 {{ end }}
+
+{{ if .Values.arenaService.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: arena-service
+  namespace: {{ $.Release.Name }}
+  labels:
+    app.kubernetes.io/instance: {{ $.Release.Name }}
+spec:
+  ports:
+    - name: "80"
+      port: 80
+      targetPort: 8080
+  selector:
+    app: arena-service
+  type: ClusterIP
+
+---
+
+{{ if .Values.arenaService.redis }}
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/instance: {{ $.Release.Name }}
+  name: arena-service-redis
+  namespace: {{ $.Release.Name }}
+spec:
+  internalTrafficPolicy: Cluster
+  ports:
+    - name: redis
+      port: 6379
+      protocol: TCP
+      targetPort: 6379
+  selector:
+    app: arena-service-redis
+  type: ClusterIP
+
+---
+{{ end }}
+{{ end }}

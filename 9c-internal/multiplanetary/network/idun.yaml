@@ -4,6 +4,9 @@ logLevel: "debug"
 global:
   validatorPath: "validator-5.idun.svc.cluster.local"
 
+  image:
+    repository: planetariumhq/ninechronicles-headless
+    tag: git-c3d6b5c1e401f61b9c18ebe6e8a3bf137fba0642
   genesisBlockPath: "https://planets-internal.nine-chronicles.com/planets/0x100000000001/genesis"
   headlessAppsettingsPath: "https://9c-cluster-config.s3.us-east-2.amazonaws.com/9c-internal/heimdall/appsettings.json"
 
@@ -49,7 +52,10 @@ bridgeService:
       channel: "9c-relay-bridge-bot-tmp-test"
 
 dataProvider:
-  enabled: false
+  enabled: true
+  image:
+    repository: planetariumhq/ninechronicles-dataprovider
+    tag: git-f544cf128dba1db6f838edf073df5237d50bcb19
   rwMode: false
   render: true
   migrateDatabase: false
@@ -164,15 +170,15 @@ seed:
   - "tcp-seed-1.idun.svc.cluster.local"
 
   nodeSelector:
-    node.kubernetes.io/instance-type: m5d.xlarge
+    eks.amazonaws.com/nodegroup: 9c-internal-t3_medium
 
 snapshot:
   partition:
-    enabled: true
+    enabled: false
     suspend: true
   slackChannel: "bot-test"
 
-  image: "planetariumhq/ninechronicles-snapshot:git-fc194ebdc47ec4ebe14f97f5ea01ff97b0a276d6"
+  image: "planetariumhq/ninechronicles-snapshot:git-45205b5ed6d978bb0dda6ad0b84fb0a393015711"
 
   path: internal/heimdall
 

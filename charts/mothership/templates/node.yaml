@@ -22,8 +22,9 @@ spec:
           command: ["sh", "-c"]
           args:
             - |
-              test -e genesis.json && test -e rollup.json && exit 0 ; \
-              curl -L --remote-name-all $GENESIS_SOURCE/{genesis.json,rollup.json} ; \
+              curl -LO --clobber $GENESIS_SOURCE/rollup.json ; \
+              test -e genesis.json && exit 0 ; \
+              curl -LO $GENESIS_SOURCE/genesis.json ; \
               hexdump -vn32 -e'4/4 "%08x"' /dev/urandom > jwt.txt
           workingDir: /node
           env:
@@ -35,26 +36,6 @@ spec:
           securityContext:
             runAsUser: 0
             runAsNonRoot: false
-        {{- if $.Values.genesis.createSnapshot }}
-        - name: create-snapshot
-          image: alpine
-          command: ["sh", "-c"]
-          args:
-            - |
-              apk add zstd aws-cli ; \
-              TIME=`date -u +%Y%m%dT%H%M%SZ` ; \
-              tar cvf - chaindata -C /data/geth | zstd - -f -o /data/snapshot-$TIME.tar.zst ; \
-              aws s3 cp /data/snapshot-$TIME.tar.zst s3://$S3_SNAPSHOT_PATH/snapshot-$TIME.tar.zst --acl public-read
-          env:
-            - name: S3_SNAPSHOT_PATH
-              value: "{{ $.Values.genesis.s3SnapshotPath }}"
-          volumeMounts:
-            - mountPath: /data
-              name: op-geth-volume
-          securityContext:
-            runAsUser: 0
-            runAsNonRoot: false
-        {{- end }}
         {{- if $.Values.genesis.snapshot }}
         - name: fetch-snapshot
           image: curlimages/curl
@@ -79,16 +60,47 @@ spec:
         {{- else }}
         - name: genesis-init
           image: {{ $.Values.node.opGeth.image }}
+          command: ["sh", "-c"]
           args:
-            - init
-            - --datadir=/data
-            - /node/genesis.json
+            - |
+              test -e /data/geth/chaindata/CURRENT && exit 0 ; \
+              geth init --datadir=/data /node/genesis.json
           volumeMounts:
             - mountPath: /data
               name: op-geth-volume
             - mountPath: /node
               name: node-volume
               readOnly: true
+        {{- end }}
+        {{- if not $isSequencer }}
+        - name: generate-static-peer
+          image: curlimages/curl
+          command: ["sh", "-c"]
+          args:
+            - |
+              apk add jq bind-tools
+              while true; do
+                peerID=$(curl -X POST -H "Content-Type: application/json" --data \
+                '{"jsonrpc":"2.0","method":"opp2p_self","params":[],"id":1}'  \
+                http://{{ $.Values.sequencer.host }}{{- with $.Values.sequencer.port.node }}:{{ . }}{{- end }} | jq -r ".result.peerID")
+              
+                if [ -n "$peerID" ]; then
+                  break
+                else
+                  echo "peerID is empty or null. Retrying..."
+                  sleep 5
+                fi
+              done
+              
+              sequencerIP=$(dig +search +short {{ $.Values.sequencer.host }} | tail -n1)
+              peerString=$(echo "/ip4/$sequencerIP/tcp/{{ $.Values.node.opNode.port.p2p.tcp }}/p2p/$peerID")
+              echo $peerString > /node/staticPeer
+          volumeMounts:
+            - mountPath: /node
+              name: node-volume
+          securityContext:
+            runAsUser: 0
+            runAsNonRoot: false
         {{- end }}
       containers:
         - name: op-geth
@@ -113,11 +125,14 @@ spec:
             - --port={{ $.Values.node.opGeth.port.p2p.tcp }}
             - --discovery.port={{ $.Values.node.opGeth.port.p2p.udp }}
             {{- if not $isSequencer }}
-            - --rollup.sequencerhttp={{ $.Values.sequencer.gethRpc }}
+            - --rollup.sequencerhttp={{ $.Values.sequencer.scheme }}://{{ $.Values.sequencer.host }}{{- with $.Values.sequencer.port.geth }}:{{ . }}{{- end }}
             {{- end }}
             - --rollup.disabletxpoolgossip=true
             - --syncmode=full
             - --gcmode=archive
+            {{- with $.Values.node.opGeth.extraArgs }}
+              {{- toYaml . | nindent 12 }}
+            {{- end }}
           ports:
             - name: op-geth-rpc
               containerPort: {{ $.Values.node.opGeth.port.rpc }}
@@ -167,6 +182,9 @@ spec:
                 --p2p.priv.path=/node/jwt.txt \
                 --p2p.peerstore.path=/node/opnode_peerstore_db \
                 --p2p.discovery.path=/node/opnode_discovery_db \
+                {{- if not $isSequencer }}
+                --p2p.static=$(cat /node/staticPeer) \
+                {{- end }}
                 --p2p.listen.ip=0.0.0.0 \
                 --p2p.listen.tcp={{ $.Values.node.opNode.port.p2p.tcp }} \
                 --p2p.listen.udp={{ $.Values.node.opNode.port.p2p.udp }} \

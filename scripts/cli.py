@@ -86,13 +86,13 @@ def update_apv(
 
 @k8s_app.command()
 def update_paev(
-    paev_url: str = typer.Argument(
+    network_type: str = typer.Argument(
         ...,
     ),
-    end_value: int = typer.Argument(
+    previous_version_block_index: int = typer.Argument(
         ...,
     ),
-    lib9c_plugin_url: str = typer.Argument(
+    previous_version_lib9c_commit: str = typer.Argument(
         ...,
     ),
 ):
@@ -100,7 +100,7 @@ def update_paev(
     Run post deploy script
     """
 
-    PluggableActionEvaluatorUpdater().update(paev_url, end_value, lib9c_plugin_url)
+    PluggableActionEvaluatorUpdater().prep_update(network_type, previous_version_block_index, previous_version_lib9c_commit)
 
 if __name__ == "__main__":
     k8s_app()

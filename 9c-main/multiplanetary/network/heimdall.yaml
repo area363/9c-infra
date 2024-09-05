@@ -5,7 +5,7 @@ clusterName: "9c-main-v2"
 logLevel: "debug"
 
 global:
-  appProtocolVersion: "200170/eE394bb942fa7c2d807C170C7Db7F26cb3EA037F/MEQCIA+AeyMlBggOA+jRVzuVx9PpKibgqoAtZikvDXRkSwhFAiAGRJIq4ZoX+Gy8Zj7OPvLGKHg0qG7.CU+RYs2AfPEW7Q==/ZHU5OnRpbWVzdGFtcHUxMDoyMDI0LTA0LTMwZQ=="
+  appProtocolVersion: "200220/eE394bb942fa7c2d807C170C7Db7F26cb3EA037F/MEUCIQDB9jQuL9xggYsqbYZ.jrs8ZTuB104brpeQlRO4jEO+uwIgDWhITiDOAyf.O0r0cOeFc5xRgQOTJt7TrwJZD.4TQvA=/ZHU5OnRpbWVzdGFtcHUxMDoyMDI0LTA4LTI4ZQ=="
 
   validatorPath: "validator-5.heimdall.svc.cluster.local"
   genesisBlockPath: "https://planets.nine-chronicles.com/planets/0x000000000001/genesis"
@@ -40,10 +40,11 @@ ingress:
     marketService: "heimdall-market.9c.gg"
     patrolRewardService: "heimdall-patrol.9c.gg"
     worldBoss: "heimdall-world-boss.9c.gg"
+    arenaService: "heimdall-arena.9c.gg"
 
 snapshot:
   slackChannel: "9c-mainnet"
-  image: "planetariumhq/ninechronicles-snapshot:git-a5572ca10a3497b3897e650b99d4713a3355eccb"
+  image: "planetariumhq/ninechronicles-snapshot:git-26ace851e53100001efbc7ba9282478269fde0f6"
   path: "main/heimdall/partition"
 
   fullSnapshot:
@@ -79,13 +80,20 @@ seed:
   # dotnet args
   workerCount: 1000
 
+  resources:
+    requests:
+      cpu: 500m
+      memory: 500Mi
+
   nodeSelector:
-    eks.amazonaws.com/nodegroup: heimdall-m5_l_2c
+    eks.amazonaws.com/nodegroup: heimdall-m7g_l_2c
 
 fullState:
   enabled: true
 
   loggingEnabled: true
+  datadog:
+    enabled: true
 
   useTurnServer: false
 
@@ -94,6 +102,7 @@ fullState:
   extraArgs:
   - --no-reduce-store
   - --tx-quota-per-signer=1
+  - --arena-participants-sync=false
 
   env:
   - name: IpRateLimiting__EnableEndpointRateLimiting
@@ -127,13 +136,13 @@ fullState:
   - name: MultiAccountManaging__EnableManaging
     value: "true"
   - name: Headless__AccessControlService__AccessControlServiceType
-    value: "redis"
+    value: "local"
   - name: Headless__AccessControlService__AccessControlServiceConnectionString
-    value: "acc-redis-service.heimdall.svc.cluster.local:6379"
-  - name: DOTNET_gcServer
-    value: "1"
+    value: "https://9c-cluster-config.s3.us-east-2.amazonaws.com/9c-main/odin/whitelist.json"
   - name: PLUGIN_PATH
     value: "/data"
+  - name: DOTNET_GCHighMemPercent
+    value: "0x5A"
 
   tolerations:
   - effect: NoSchedule
@@ -167,20 +176,23 @@ validator:
   - name: IpRateLimiting__IpWhiteList__3
     value: "::ffff:118.131.110.197"
   - name: Headless__AccessControlService__AccessControlServiceType
-    value: "redis"
+    value: "local"
   - name: Headless__AccessControlService__AccessControlServiceConnectionString
-    value: "acc-redis-service.heimdall.svc.cluster.local:6379"
-  - name: DOTNET_gcServer
-    value: "1"
+    value: "https://9c-cluster-config.s3.us-east-2.amazonaws.com/9c-main/odin/whitelist.json"
   - name: PLUGIN_PATH
     value: "/data"
+  - name: DOTNET_GCHighMemPercent
+    value: "0x5A"
 
   loggingEnabled: true
+  datadog:
+    enabled: true
 
   extraArgs:
   - --tx-quota-per-signer=1
   - --tx-life-time=10
-  - --consensus-target-block-interval=7500
+  - --consensus-target-block-interval=8000
+  - --arena-participants-sync=false
 
   consensusSeedStrings:
   - "03380b4ba8722057c9b4d8594f8de9481eb296aba4b3c168666f57b17596452ae7,heimdall-seed-1.nine-chronicles.com,31235"
@@ -198,7 +210,7 @@ validator:
     eks.amazonaws.com/nodegroup: heimdall-r7g_xl_2c_validator
 
 remoteHeadless:
-  count: 2
+  count: 4
   replicas: 1
 
   useTurnServer: false
@@ -206,6 +218,8 @@ remoteHeadless:
   hosts:
   - "heimdall-rpc-1.nine-chronicles.com"
   - "heimdall-rpc-2.nine-chronicles.com"
+  - "heimdall-rpc-3.nine-chronicles.com"
+  - "heimdall-rpc-4.nine-chronicles.com"
 
   env:
   - name: IpRateLimiting__EnableEndpointRateLimiting
@@ -231,24 +245,25 @@ remoteHeadless:
   - name: IpRateLimiting__IpWhiteList__3
     value: "::ffff:118.131.110.197"
   - name: Headless__AccessControlService__AccessControlServiceType
-    value: "redis"
+    value: "local"
   - name: Headless__AccessControlService__AccessControlServiceConnectionString
-    value: "acc-redis-service.heimdall.svc.cluster.local:6379"
-  - name: DOTNET_gcServer
-    value: "1"
+    value: "https://9c-cluster-config.s3.us-east-2.amazonaws.com/9c-main/odin/whitelist.json"
   - name: PLUGIN_PATH
     value: "/data"
+  - name: DOTNET_GCHighMemPercent
+    value: "0x5A"
 
   extraArgs:
   - --tx-quota-per-signer=1
+  - --arena-participants-sync=false
 
   nodeSelector:
-    eks.amazonaws.com/nodegroup: heimdall-m7g_2xl_2c_test
+    eks.amazonaws.com/nodegroup: heimdall-r7g_2xl_2c_test
 
   resources:
     requests:
       cpu: '5'
-      memory: 28Gi
+      memory: 50Gi
 
   tolerations:
   - effect: NoSchedule
@@ -257,6 +272,8 @@ remoteHeadless:
     value: remote-headless-test
 
   loggingEnabled: true
+  datadog:
+    enabled: true
 
 dataProviderDataMigrator:
   enabled: true
@@ -283,6 +300,12 @@ dataProvider:
     requests:
       cpu: '3'
       memory: 26Gi
+
+  env:
+  - name: PLUGIN_PATH
+    value: "/data"
+  - name: NC_Planet
+    value: Heimdall
 
 explorer:
   enabled: false
@@ -317,15 +340,15 @@ marketService:
 
   nodeSelector:
     read:
-      eks.amazonaws.com/nodegroup: heimdall-m5_l_2c
+      eks.amazonaws.com/nodegroup: heimdall-m7g_l_2c
     write:
-      eks.amazonaws.com/nodegroup: heimdall-m7g_xl_2c
+      eks.amazonaws.com/nodegroup: heimdall-m7g_l_2c
 
 worldBoss:
   enabled: true
 
   nodeSelector:
-    eks.amazonaws.com/nodegroup: heimdall-m5_l_2c
+    eks.amazonaws.com/nodegroup: heimdall-m7g_l_2c
 
 bridge:
   enabled: false
@@ -345,7 +368,7 @@ bridgeService:
     size: "50Gi"
 
   nodeSelector:
-    eks.amazonaws.com/nodegroup: heimdall-m5_l_2c
+    eks.amazonaws.com/nodegroup: heimdall-m7g_l_2c
 
   account:
     type: "kms"
@@ -374,8 +397,8 @@ testHeadless1:
   enabled: true
   replicas: 1
 
-  image:
-    tag: "git-d0ef9a8410e1dd8ba9474d046553db018d1eef27"
+  datadog:
+    enabled: true
 
   host: "heimdall-test-1.nine-chronicles.com"
 
@@ -413,18 +436,19 @@ testHeadless1:
   - name: IpRateLimiting__IpBanThresholdCount
     value: "5"
   - name: Headless__AccessControlService__AccessControlServiceType
-    value: "redis"
+    value: "local"
   - name: Headless__AccessControlService__AccessControlServiceConnectionString
-    value: "acc-redis-service.heimdall.svc.cluster.local:6379"
-  - name: OPTL_ENDPOINT
+    value: "https://9c-cluster-config.s3.us-east-2.amazonaws.com/9c-main/odin/whitelist.json"
+  - name: OTLP_ENDPOINT
     value: "http://172.20.239.175:4318"
-  - name: DOTNET_gcServer
-    value: "1"
   - name: PLUGIN_PATH
     value: "/data"
+  - name: DOTNET_GCHighMemPercent
+    value: "0x5A"
 
   extraArgs:
   - --tx-quota-per-signer=1
+  - --arena-participants-sync=false
 
   tolerations:
   - effect: NoSchedule
@@ -472,18 +496,17 @@ testHeadless2:
   - name: IpRateLimiting__IpBanThresholdCount
     value: "5"
   - name: Headless__AccessControlService__AccessControlServiceType
-    value: "redis"
+    value: "local"
   - name: Headless__AccessControlService__AccessControlServiceConnectionString
-    value: "acc-redis-service.heimdall.svc.cluster.local:6379"
-  - name: OPTL_ENDPOINT
+    value: "https://9c-cluster-config.s3.us-east-2.amazonaws.com/9c-main/odin/whitelist.json"
+  - name: OTLP_ENDPOINT
     value: http://172.20.239.175:4318
-  - name: DOTNET_gcServer
-    value: "1"
   - name: PLUGIN_PATH
     value: "/data"
 
   extraArgs:
   - --tx-quota-per-signer=1
+  - --arena-participants-sync=false
 
   tolerations:
   - effect: NoSchedule
@@ -514,16 +537,17 @@ jwtHeadless:
   - name: IpRateLimiting__IpBanThresholdCount
     value: "5"
   - name: Headless__AccessControlService__AccessControlServiceType
-    value: "redis"
+    value: "local"
   - name: Headless__AccessControlService__AccessControlServiceConnectionString
-    value: "acc-redis-service.heimdall.svc.cluster.local:6379"
-  - name: DOTNET_gcServer
-    value: "1"
+    value: "https://9c-cluster-config.s3.us-east-2.amazonaws.com/9c-main/odin/whitelist.json"
   - name: PLUGIN_PATH
     value: "/data"
+  - name: DOTNET_GCHighMemPercent
+    value: "0x5A"
 
   extraArgs:
   - --tx-quota-per-signer=1
+  - --arena-participants-sync=false
 
   resources:
     requests:
@@ -561,8 +585,13 @@ blockIntervalNotifier:
 patrolRewardService:
   enabled: true
 
+  resources:
+    requests:
+      cpu: 100m
+      memory: 500Mi
+
   nodeSelector:
-    eks.amazonaws.com/nodegroup: heimdall-m5_l_2c
+    eks.amazonaws.com/nodegroup: heimdall-m7g_l_2c
 
 acc:
   enabled: true
@@ -572,14 +601,14 @@ acc:
     port: 6379
 
     nodeSelector:
-      eks.amazonaws.com/nodegroup: heimdall-m7g_xl_2c
+      eks.amazonaws.com/nodegroup: heimdall-m7g_l_2c
 
     resources:
       requests:
-        memory: 8Gi
+        memory: 200Mi
 
   nodeSelector:
-    eks.amazonaws.com/nodegroup: general-t3_medium
+    eks.amazonaws.com/nodegroup: heimdall-m7g_l_2c
 
 volumeRotator:
   enabled: false
@@ -608,8 +637,11 @@ rudolfService:
     - "sg-0f0bf654f2ff02289"
     - "sg-033602a010bce902e"
 
+  nodeSelector:
+    eks.amazonaws.com/nodegroup: heimdall-m7g_l_2c
+
 rudolfCurrencyNotifier:
-  enabled: true
+  enabled: false
 
   config:
     schedule: "0 0 * * *"
@@ -617,10 +649,27 @@ rudolfCurrencyNotifier:
     targetAddress: "0xec48c68198dA91e89d6CA4eff93C23441e167358"
     serverName: "heimdall"
   nodeSelector:
-    eks.amazonaws.com/nodegroup: heimdall-m5_l_2c
+    eks.amazonaws.com/nodegroup: heimdall-m7g_l_2c
 
 stateMigrationService:
   enabled: false
 
   nodeSelector:
-    eks.amazonaws.com/nodegroup: heimdall-m5_l_2c
+    eks.amazonaws.com/nodegroup: heimdall-m7g_l_2c
+
+arenaService:
+  enabled: true
+  rwMode: true
+  env:
+    - name: Worker
+      value: "false"
+
+  envForWrite:
+    - name: Worker
+      value: "true"
+
+  nodeSelector:
+    read:
+      eks.amazonaws.com/nodegroup: heimdall-m7g_l_2c
+    write:
+      eks.amazonaws.com/nodegroup: heimdall-m7g_l_2c

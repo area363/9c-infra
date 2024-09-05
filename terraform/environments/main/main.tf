@@ -64,6 +64,16 @@ module "common" {
       ami_type          = "AL2_ARM_64"
     }
 
+    "9c-main-m7g_l_2c" = {
+      instance_types    = ["m7g.large"]
+      availability_zone = "us-east-2c"
+      capacity_type     = "ON_DEMAND"
+      desired_size      = 1
+      min_size          = 0
+      max_size          = 5
+      ami_type          = "AL2_ARM_64"
+    }
+
     "9c-main-m7g_xl_2c" = {
       instance_types    = ["m7g.xlarge"]
       availability_zone = "us-east-2c"
@@ -106,6 +116,22 @@ module "common" {
       }]
     }
 
+    "9c-main-r7g_2xl_2c_dp" = {
+      instance_types    = ["r7g.2xlarge"]
+      availability_zone = "us-east-2c"
+      capacity_type     = "ON_DEMAND"
+      desired_size      = 0
+      min_size          = 0
+      max_size          = 10
+      ami_type          = "AL2_ARM_64"
+      disk_size         = 50
+      taints = [{
+        key    = "dedicated"
+        value  = "remote-headless-test"
+        effect = "NO_SCHEDULE"
+      }]
+    }
+
     "9c-main-r7g_2xl_2c" = {
       instance_types    = ["r7g.2xlarge"]
       availability_zone = "us-east-2c"
@@ -133,8 +159,39 @@ module "common" {
       }]
     }
 
+   "9c-main-m7i_flex_2xl_2c_test" = {
+      instance_types    = ["m7i-flex.2xlarge"]
+      availability_zone = "us-east-2c"
+      capacity_type     = "ON_DEMAND"
+      desired_size      = 1
+      min_size          = 1
+      max_size          = 10
+      disk_size         = 50
+      taints = [{
+        key    = "dedicated"
+        value  = "remote-headless-test"
+        effect = "NO_SCHEDULE"
+      }]
+    }
+
     "9c-main-r7g_xl_2c_validator" = {
       instance_types    = ["r7g.xlarge"]
+      availability_zone = "us-east-2c"
+      capacity_type     = "ON_DEMAND"
+      desired_size      = 4
+      min_size          = 4
+      max_size          = 10
+      ami_type          = "AL2_ARM_64"
+      disk_size         = 50
+      taints = [{
+        key    = "dedicated"
+        value  = "validator-test"
+        effect = "NO_SCHEDULE"
+      }]
+    }
+
+    "9c-main-r7g_2xl_2c_validator" = {
+      instance_types    = ["r7g.2xlarge"]
       availability_zone = "us-east-2c"
       capacity_type     = "ON_DEMAND"
       desired_size      = 0
@@ -211,6 +268,16 @@ module "common" {
 
     "heimdall-r7g_xl_2c" = {
       instance_types    = ["r7g.xlarge"]
+      availability_zone = "us-east-2c"
+      capacity_type     = "ON_DEMAND"
+      desired_size      = 1
+      min_size          = 0
+      max_size          = 5
+      ami_type          = "AL2_ARM_64"
+    }
+
+    "heimdall-m7g_l_2c" = {
+      instance_types    = ["m7g.large"]
       availability_zone = "us-east-2c"
       capacity_type     = "ON_DEMAND"
       desired_size      = 1

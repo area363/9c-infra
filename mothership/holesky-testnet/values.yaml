@@ -11,19 +11,24 @@ awsLoadBalancerSslCert: arn:aws:acm:us-east-2:319679068466:certificate/dbb84b9a-
 
 genesis:
   source: https://mothership-devnet-holesky-genesis.s3.us-east-2.amazonaws.com/testnet
-  createSnapshot: false
-  s3SnapshotPath: ""
+  createSnapshot: true
+  s3SnapshotPath: "mothership-devnet-holesky-genesis/testnet/snapshot"
 
 blockscout:
+  enabled: true
   loadBalancerExternal: true
   db:
+    enabled: true
     storage: 100Gi
 
 sequencer:
   enabled: true
   nodeIndex: "1"
-  gethRpc: http://node-1:8545
-  nodeRpc: http://node-1:8547
+  scheme: "http"
+  host: "node-1"
+  port:
+    geth: 8545
+    node: 8547
 
 node:
   count: 2
@@ -35,3 +40,23 @@ node:
     resources:
       requests:
         memory: 4Gi
+  nodeSelector:
+    eks.amazonaws.com/nodegroup: mothership-r7a_l_2c
+
+opBatcher:
+  nodeSelector:
+    eks.amazonaws.com/nodegroup: mothership-r7a_l_2c
+
+opProposer:
+  nodeSelector:
+    eks.amazonaws.com/nodegroup: mothership-r7a_l_2c
+
+bundler:
+  enabled: true
+  loadBalancerExternal: true
+
+proxyd:
+  enabled: true
+  loadBalancerExternal: true
+  nodeSelector:
+    eks.amazonaws.com/nodegroup: mothership-r7a_l_2c

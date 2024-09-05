@@ -4,20 +4,24 @@ externalSecret:
 genesis:
   createSnapshot: false
   snapshot: ""
+  s3SnapshotPath: ""
   volume:
     storage: 100Mi
 
 sequencer:
   enabled: false
   nodeIndex: ""
-  gethRpc: ""
-  nodeRpc: ""
+  scheme: "http"
+  host: ""
+  port:
+    geth: ""
+    node: ""
 
 node:
   count: 1
   loadBalancerExternal: false
   opGeth:
-    image: &op-geth-image us-docker.pkg.dev/oplabs-tools-artifacts/images/op-geth:v1.101315.0
+    image: &op-geth-image ghcr.io/planetarium/op-geth:v1.101315.2
     port: &op-geth-port
       rpc: 8545
       wsrpc: 8546
@@ -27,8 +31,9 @@ node:
         udp: 30303
     volume: &op-geth-volume
       storage: 100Gi
+    extraArgs: []
   opNode:
-    image: &op-node-image us-docker.pkg.dev/oplabs-tools-artifacts/images/op-node:v1.7.5
+    image: &op-node-image us-docker.pkg.dev/oplabs-tools-artifacts/images/op-node:v1.7.7
     port: &op-node-port
       rpc: 8547
       p2p:
@@ -39,18 +44,37 @@ node:
       storage: 100Mi
 
 opBatcher:
-  image: us-docker.pkg.dev/oplabs-tools-artifacts/images/op-batcher:v1.7.4
+  image: us-docker.pkg.dev/oplabs-tools-artifacts/images/op-batcher:v1.7.7
   port:
     rpc: 8548
 
 opProposer:
-  image: us-docker.pkg.dev/oplabs-tools-artifacts/images/op-proposer:v1.7.4
+  image: us-docker.pkg.dev/oplabs-tools-artifacts/images/op-proposer:v1.7.7
   port:
     rpc: 8560
 
 blockscout:
+  enabled: false
+  image: blockscout/blockscout:6.7.1
   port: 5000
   loadBalancerExternal: false
   gethRpc: http://node-1:8545
+  indexer: true
   db:
+    local: true
     storage: 10Gi
+    url: postgresql://postgres:@blockscout-postgres:5432/blockscout?ssl=false
+
+bundler:
+  enabled: false
+  image: stackupwallet/stackup-bundler:v0.6.47
+  loadBalancerExternal: false
+  gethRpc: http://proxyd:8080
+  port: 4337
+
+proxyd: 
+  enabled: false
+  image: us-docker.pkg.dev/oplabs-tools-artifacts/images/proxyd:v4.6.0
+  loadBalancerExternal: false
+  gethRpc: http://node-1:8545
+  port: 8080
